@@ -125,7 +125,7 @@ class ImgurDownloader:
         imgur_url = self.get_all_format_url(imgur_url)
         # e.g.: imgur.com/a/p5wLR -> imgur.com/a/p5wLR/all
         try:
-            cookies=dict(authautologin=f"[{cookies}]")
+            cookies=dict(authautologin=self.cookies)
             self.response = requests.get(imgur_url,cookies=cookies)
             response_code = self.response.status_code
         except Exception as e:
