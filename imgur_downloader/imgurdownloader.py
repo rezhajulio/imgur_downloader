@@ -26,6 +26,7 @@ import urllib.parse
 import urllib.request
 import unicodedata
 import click
+import requests
 
 
 __doc__ = """
@@ -57,7 +58,7 @@ class ImgurDownloader:
     """Parses imgur and downloads image(s)"""
 
     def __init__(self, imgur_url, dir_download=os.getcwd(), file_name='',
-                 delete_dne=True, debug=False):
+                 cookies=None, delete_dne=True, debug=False):
         """Gather imgur hashes & extensions from the url passed
 
         :param imgur_url: url of imgur gallery, album, single img, or direct
@@ -67,6 +68,7 @@ class ImgurDownloader:
         :param file_name: name of folder containing images from album or name
             of single image (depending on imgur_url) if file_name given,
             it prioritizes over webpage title and imgur key
+           :param cookies: string of cookies to login to imgur
         :param delete_dne: prevent downloading of Imgur Does Not Exist image
             if encountered
         :param debug: prints several variables throughout the class
@@ -82,6 +84,7 @@ class ImgurDownloader:
 
         self.delete_dne = delete_dne
         self.debug = debug
+        self.cookies = cookies
 
         self.log = logging.getLogger('ImgurDownloader')
 
@@ -122,21 +125,18 @@ class ImgurDownloader:
         imgur_url = self.get_all_format_url(imgur_url)
         # e.g.: imgur.com/a/p5wLR -> imgur.com/a/p5wLR/all
         try:
-            self.response = urllib.request.urlopen(url=imgur_url)
-            response_code = self.response.getcode()
+            cookies=dict(authautologin=f"[{cookies}]")
+            self.response = requests.get(imgur_url,cookies=cookies)
+            response_code = self.response.status_code
         except Exception as e:
             self.response = False
-            try:
-                response_code = e.code
-            except AttributeError:
-                raise e
 
-        if not self.response or self.response.getcode() != 200:
+        if not self.response or self.response.status_code != 200:
             raise ImgurException("[ImgurDownloader] HTTP Response Code %d"
                                  % response_code)
 
         # Read in the images now so we can get stats and stuff:
-        html = self.response.read().decode('utf-8')
+        html = self.response.text
 
         # default album_title
         self.album_title = self.main_key
